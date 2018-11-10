@@ -1,0 +1,115 @@
+<?php
+session_start();
+require_once '../../includes/autoload.php';
+
+use classes\business\UserManager;
+use classes\entity\User;
+
+ob_start();
+include '../../includes/security.php';
+include '../../includes/header.php';
+?>
+
+<?php
+
+$formerror="";
+$firstName="";
+$lastName="";
+$email="";
+$password="";
+$cpassword="";
+
+$UM=new UserManager();
+$existuser=$UM->getUserByEmail($_SESSION["email"]);
+if(!isset($_POST["submitted"])){
+  $firstName=$existuser->firstName;
+  $lastName=$existuser->lastName;
+  $email=$existuser->email;
+  $password=$existuser->password;
+ }else{
+  $firstName=$_POST["firstName"];
+  $lastName=$_POST["lastName"];
+  $email=$_POST["email"];
+  
+  if($_POST["password"] == $existuser->password ){
+  $password = $_POST["password"];
+  $cpassword = $_POST["cpassword"];
+  }else {
+      $password = md5($_POST["password"]);
+      $cpassword= md5($_POST["cpassword"]);
+  }
+  
+  if($firstName!='' && $lastName!='' && $email!='' && $password!=''){
+      if( $password == $cpassword ){
+       $update=true;
+       $UM=new UserManager();
+       if($email!=$_SESSION["email"]){
+           $existuser=$UM->getUserByEmail($email);
+           if(is_null($existuser)==false){
+               $formerror="User Email already in use, unable to update email";
+               $update=false;
+           }
+       }
+       if($update){
+           $existuser=$UM->getUserByEmail($_SESSION["email"]);
+           $existuser->firstName=$firstName;
+           $existuser->lastName=$lastName;
+           $existuser->email=$email;
+           $existuser->password=$password;
+           $UM->saveUser($existuser);
+           $_SESSION["email"]=$email;
+           header("Location:../../home.php");
+       }
+      }
+      else{
+          //$formerror = "Password does not match";
+          ?><B><font color = "Red">Password does not match with Confirm Password Please re-enter again </font></B>
+        
+        <?php
+       }
+  }else{
+      $formerror="Please provide required values";
+  }
+}
+?>
+
+
+<link rel="stylesheet" href="..\..\css\pure-release-1.0.0\pure-min.css">
+
+<form name="myForm" method="post" class="pure-form pure-form-stacked">
+<h1>Update Profile</h1>
+<div><?=$formerror?></div>
+<table width="800">
+  <tr>
+    <td>First Name</td>
+    <td><input type="text" name="firstName" value="<?=$firstName?>" "pattern="[a-zA-Z]{4,20}" title="Accept only alphabets,4-20 characters" size="50"></td>
+  </tr>
+  <tr>
+    <td>Last Name</td>
+    <td><input type="text" name="lastName" value="<?=$lastName?>" "pattern="[a-zA-Z]{4,20}" title="Accept only alphabets,4-20 characters" size="50"></td>
+  </tr>
+  <tr>
+    <td>Email</td>
+    <td><input type="text" name="email" value="<?php echo $existuser->email;?>" readonly></td>
+  </tr>
+  <tr>
+    <td>Password</td>
+    <td><input type="password" name="password" value="<?=$password?>" size="20"></td>
+  </tr>
+  <tr>
+    <td>Confirm Password</td>
+    <td><input type="password" name="cpassword" value="<?=$password?>" size="20"></td>
+  </tr>
+  <tr>
+	<td></td>
+    <td><input type="submit" name="submitted" value="Submit" class="pure-button pure-button-primary">
+    <input type="reset" name="reset" value="Reset" class="pure-button pure-button-primary"></td>
+    </td>
+  </tr>
+</table>
+</form>
+
+
+<?php
+include '../../includes/footer.php';
+?>
